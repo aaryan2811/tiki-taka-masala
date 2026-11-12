@@ -83,6 +83,25 @@ default, `run_devset.py` prints "M2c: no learned team" and "M2b: no M2c rules, n
 against M4, and every other stage switched off under M4, where it also changes what the model
 reads.
 
+### Latest: the video rules withdrawn (2026-11-12)
+
+The shipped pipeline no longer runs M3's decisive-touch placement, M3b's duel rule or M3b's keeper
+split: they came out of comparing our output with the tactical video, which the organisers'
+clarification does not allow (DESIGN.md section 4, "Withdrawn: the rules from the video"). M4 was
+retrained without them and passed its gate on calibration again (+0.069 / +0.102 raw / merged 3 s,
+tags). One run on all seven matches, with the 1 s restart rest that ships; the held-out five, tags:
+
+| pipeline | spellF1 raw | merged2s | merged3s | macroF1 raw | D precision / recall | poss/min |
+|---|---|---|---|---|---|---|
+| **M4 (current)** | **0.416** [0.385, 0.448] | **0.504** | **0.542** [0.511, 0.576] | 0.800 | 0.96 / 0.77 | 2.56 |
+| M2c: the rules alone | 0.339 [0.308, 0.372] | 0.393 | 0.422 [0.387, 0.463] | 0.764 | 0.96 / 0.77 | 2.42 |
+| M4 before the withdrawal | 0.415 | 0.503 | 0.543 | 0.802 | 0.95 / 0.77 | 2.54 |
+| `baseline_smooth50` | 0.233 [0.216, 0.247] | 0.243 | 0.233 | 0.616 | 0.76 / 0.59 | 5.15 |
+
+M4 − M2c: +0.077 [+0.065, +0.088] raw, +0.120 [+0.104, +0.137] merged 3 s. M4 before the withdrawal
+− M4 now: −0.001 [−0.004, +0.002] raw, +0.001 [−0.002, +0.004] merged 3 s. The sections below are the
+earlier runs, with the three rules still on.
+
 ### M4 on the held-out matches
 
 **Verdict: the learned team holds up on matches it never saw, by more than in the gate. It is on by

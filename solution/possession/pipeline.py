@@ -11,11 +11,11 @@ from . import boundary, contest, control, deadball, keepers, labels, learned, se
 from .features import nearest_by_team, relative_speed
 
 
-def rules(tracking, blocks, tags=(), boundaries=True, split_keepers=True, duels=True,
+def rules(tracking, blocks, tags=(), boundaries=False, split_keepers=False, duels=False,
           foul_stoppages=True, stoppage_starts=True, restart_laws=True):
-    """Stages 1-3 and 5, the hand-written rules (M1-M3b, M2b, M2c): a dict of what each produced.
+    """Stages 1-3 and 5, the hand-written rules (M1, M2, M2b, M2c): a dict of what each produced.
 
-    tracking   the tracking every stage saw (keeper slots split)
+    tracking   the tracking every stage saw (keeper slots split only if split_keepers)
     ball       the repaired ball track, and interpolated, the frames the repair filled
     distance, slot, relative
                each team's nearest player to the ball, and how fast the ball moves past them
@@ -54,17 +54,22 @@ def rules(tracking, blocks, tags=(), boundaries=True, split_keepers=True, duels=
             "owner": owner, "moved": moved}
 
 
-def label_frames(tracking, blocks, tags=(), boundaries=True, split_keepers=True, duels=True,
+def label_frames(tracking, blocks, tags=(), boundaries=False, split_keepers=False, duels=False,
                  foul_stoppages=True, stoppage_starts=True, restart_laws=True, learned_model=True,
                  model=None):
     """(codes, info) for every frame of the recording.
 
     tags are the Smart Tagging instances (starter/load_smart_tagging.load()); without them the
-    dead-ball detector confirms stoppages from line crossings and slowdowns alone. boundaries=False
-    leaves every change of possession on its controlled touch (skips stage 5), split_keepers=False
-    reads each goalkeeper slot with the XML's fixed team (skips keepers.split), duels=False lets every
-    controlled touch count (skips contest.resolve), and foul_stoppages=False confirms dead balls by
-    crossings and tags only (M2's rule), to measure what each does. stoppage_starts=False and
+    dead-ball detector confirms stoppages from line crossings and slowdowns alone.
+    foul_stoppages=False confirms dead balls by crossings and tags only (M2's rule), to measure what
+    it does.
+
+    boundaries, split_keepers and duels are off, and the submission does not use them. They are
+    M3's and M3b's rules (moving each change to the decisive touch, reading a keeper slot by the half
+    it stands in, voiding a duel taken straight back), and they came out of comparing our output
+    with the tactical video, which the organisers' clarification of the rules does not allow. They
+    were withdrawn on 2026-11-12 (DESIGN.md section 4, "Withdrawn: the rules from the video") and
+    stay only as switches for the experiments that measured them. stoppage_starts=False and
     restart_laws=False switch off M2c's two rules (deadball.detect): earlier stoppage starts, and
     the restart team from where the players stand.
 

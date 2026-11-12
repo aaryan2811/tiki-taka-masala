@@ -173,18 +173,20 @@ def test_a_keeper_slot_belongs_to_the_team_whose_half_it_is_in():
     assert keepers.split(split, [(0, 100), (100, 200)]) is split
 
 
-def test_a_keeper_in_the_wrong_slot_does_not_take_the_ball():
+def test_the_keeper_split_is_off_unless_asked_for():
+    # Withdrawn with the other rules from the video (pipeline.label_frames): the submission reads
+    # each keeper slot with the XML's fixed team, and the split stays only as a switch.
     tracking = keeper_match()
     tracking.players[:, 1] = [80.0, 34.0]
     tracking.ball[10:60] = [80.5, 34.0]                                  # at an away player's feet
     tracking.ball[60:120] = np.linspace([80.5, 34.0], [94.5, 34.0], 60)  # passed back, 6 m/s
     tracking.ball[120:180] = [94.5, 34.0]                                # held by the keeper
 
-    codes, _ = pipeline.label_frames(tracking, [(0, 200)], split_keepers=False,
-                                     learned_model=False)
-    assert (codes[130:] == pm.H).all()       # read as the XML's home keeper
     codes, _ = pipeline.label_frames(tracking, [(0, 200)], learned_model=False)
-    assert (codes == pm.A).all()             # it is away's own keeper
+    assert (codes[130:] == pm.H).all()       # read as the XML's home keeper
+    codes, _ = pipeline.label_frames(tracking, [(0, 200)], split_keepers=True,
+                                     learned_model=False)
+    assert (codes == pm.A).all()             # the switch reads it as away's own keeper
 
 
 # -- stage 2 -----------------------------------------------------------------------------------------

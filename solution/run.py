@@ -38,12 +38,9 @@ def main():
                                         learned_model=not args.rules_only)
     print("ball located on {:.1%} of frames, {:.1%} after repair ({} interpolated)".format(
         info["ball_raw"], info["ball_repaired"], info["interpolated_frames"]))
-    print("goalkeeper slots read by the half they stand in: {}".format(len(tracking.keeper_slots)))
-    print("on the ball: {} frames, {} controlled touches ({} more void: duels the other team took "
-          "straight back)".format(info["on_ball_frames"], info["touches"], len(info["void"])))
-    shifts = sorted((old - new) / 25.0 for old, new in info["moved"])
-    print("changes of possession: {}, {} moved back to the decisive touch (median {:.1f} s)".format(
-        info["changes"], len(shifts), shifts[len(shifts) // 2] if shifts else 0.0))
+    print("on the ball: {} frames, {} controlled touches".format(info["on_ball_frames"],
+                                                               info["touches"]))
+    print("changes of possession: {}".format(info["changes"]))
     if info["learned"]:
         model = learned.load()
         print("team in open play: M4's learned model ({} trees, trained on DFL {}, CC BY 4.0), "

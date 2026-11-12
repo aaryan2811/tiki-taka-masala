@@ -6,8 +6,8 @@ More than a Hack 2027, Phase 1 — technical document.
 |---|---|
 | Team | Tiki Taka Masala |
 | Repository | <https://github.com/aaryan2811/tiki-taka-masala> — the pipeline is `solution/`, the command `python solution/run.py` |
-| Pipeline | M4 on the re-checked rules (2026-10-28), as published in the repository |
-| Submission file | 199,319 rows; SHA-256 `c77d0ae0bcf5556bf0aca67b82e930b938230652da6f0fe6c6e3504fd5cbffb1` |
+| Pipeline | M4 without the rules that came from the video (2026-11-12), as published in the repository |
+| Submission file | 199,319 rows; SHA-256 `8e93ae6ffd0967dcd06fa622c0ca4bac38fe42d25f401eb71e053cbbbae03b41` |
 
 **In short.**
 - **Dead balls and restarts** come from hand-written rules, built for precision because a false dead
@@ -16,12 +16,12 @@ More than a Hack 2027, Phase 1 — technical document.
   give, for every frame, how likely each team is to have the ball. A two-state Viterbi path between
   the stoppages turns that into possessions, paying a cost for every change.
 - **Validation.** On five other open DFL matches that shaped nothing in it, degraded to look like
-  this match's tracking, the pipeline scores spellF1 **0.414** [0.383, 0.445]. The rules alone score
-  0.344 and the organisers' `baseline_smooth50` 0.233. Against a truth that absorbs spells under 3 s
-  lost straight back, the three score 0.542, 0.430 and 0.233. These figures are for the pipeline as
-  it stood before the final re-check (section 4).
-- **The public 5 minutes** score 0.622 [0.39, 0.81] (macroF1 0.902). We use them as a correctness
-  check only.
+  this match's tracking, the pipeline scores spellF1 **0.416** [0.385, 0.448]. The rules alone score
+  0.339 and the organisers' `baseline_smooth50` 0.233. Against a truth that absorbs spells under 3 s
+  lost straight back, the three score 0.542, 0.422 and 0.233.
+- **Every parameter is set on external data** (the DFL matches), or read without labels from this
+  match's tracking and tags. Nothing is trained, fitted or calibrated on the ground truth or the
+  video (section 4).
 - **A clean checkout** regenerates the file byte for byte (section 6).
 
 Brackets are 90% bootstrap intervals. Every number comes from `solution/DESIGN.md` (the full
@@ -58,10 +58,9 @@ Four design rules follow:
 |---|---|---|
 | load | `atd.py` | parse the raw ATD into arrays in metres; cache them (gitignored) |
 | ball | `ball.py` | drop spikes and runs under 3 frames; fill gaps up to 1 s with a line |
-| keepers | `keepers.py` | read each goalkeeper slot as the team whose half it stands in |
-| evidence | `features.py`, `control.py`, `contest.py` | nearest player per team, controlled touches, duels, team shape |
+| evidence | `features.py`, `control.py` | nearest player per team, controlled touches, team shape |
 | dead balls | `deadball.py` | slowdowns confirmed by a crossing, a tag or a slowdown beyond open play; start, restart kick, restart team |
-| the rules' team | `control.py`, `boundary.py` | the last controlled touch's team, each change moved to the decisive touch (M2c; `--rules-only` writes it) |
+| the rules' team | `control.py` | the last controlled touch's team (M2c; `--rules-only` writes it) |
 | learned team (M4) | `learned.py`, `segment.py`, `model.json` | per-frame log-odds from 63 features; a Viterbi path between the stoppages |
 | out | `labels.py` | `H`/`A`/`D` on graded frames, `X` outside them; validated |
 
@@ -88,8 +87,8 @@ Every rule threshold is in `config.py`, with its measurement next to it. M4's pa
 | **Tactical ATD** (`_atd.txt`) | the main input | Ball and 46 track slots per frame; the ball is seen on 56.9% of frames. Ball speed is derived from positions, because the ball's own speed field peaks at 7.3 m/s. Player speed is in m/s despite the name `speed_kph`. |
 | **ATD metadata** (`_atd.xml`) | yes | Each slot's team, the goalkeeper slots, the attack direction in the first half. |
 | **Smart Tagging** | set pieces only | A `SET PIECES` tag near a slowdown confirms a dead ball; its team is the last fallback for the restart team. 59 set pieces, only 5 of them free kicks; throw-ins carry no team. Phase tags are not used: a phase is not a possession. |
-| **Public ground truth** (5 minutes) | correctness check | Frame alignment, format, what the labels mean, and a sanity score reported after each decision. No model is trained or validated on it. Before the DFL dev set existed it steered some early choices; every value it steered is now set on DFL (section 4). |
-| **Tactical video and homography** | inspection only | Watched on public-window frames to understand the labels and the tracking's defects. Three general rules came out of it (section 4). No label, correction, rule or constant refers to a frame of this match. |
+| **Public ground truth** (5 minutes) | automatic checks | Frame alignment, format, what the labels mean. No model is trained, tuned or validated on it. Before the DFL dev set existed it steered some early choices; every value it steered is now set on DFL (section 4). |
+| **Tactical video and homography** | not in the pipeline | Inspected on public-window frames to understand what counts as possession. Early on we also compared our output with it; the three rules that came out of that are withdrawn (section 4). No label, correction, rule or constant comes from it. |
 | **Broadcast source** | no | It can be aligned to the tactical timeline, but no labelled data could test what it adds. |
 | **DFL / Sportec open data** (7 matches, CC BY 4.0) | training, calibration, validation | Per-frame truth for other matches. Two train M4 and set the DFL-measured thresholds; five validate. All of it runs on tracking degraded to look like ours. `run.py` reads only the exported `model.json`. |
 | Organisers' code | yes | `games.py`, the `starter/` loaders, `evaluation/possession_metrics.py` (never reimplemented). |
@@ -118,7 +117,8 @@ game. Every labelled dataset is about other games, and its labels were made by t
 
 This game enters the training without any label. The degradation is fitted to aggregates of its
 tracking (`solution/devset/params.json`), and the synthetic tags copy its set-piece counts.
-RULES.md allows "learning without human labels". The held-out five trained and tuned nothing.
+The clarification allows any generated data as input, as long as nothing is trained on the ground
+truth or the video. The held-out five trained and tuned nothing.
 
 ### Tried and dropped
 
@@ -136,7 +136,8 @@ and 0.468 merged at 3 s.
 | Looser touch thresholds | raw rises to 0.383, merged 3 s falls | kept the shipped values |
 | A looser foul test (0.70 m/s or 20 s), named beforehand | held-out: 2 false stoppages and 168 caught, against 3 and 199 shipped | kept the shipped setting |
 | A ball-based restart rule (long unseen rest) | cannot be checked: DFL freezes its dead-ball ball | not shipped |
-| M4 alternatives in its gate: logistic regression, a 3 s target, no minimum length | mean gains +0.049, +0.066, +0.079, against +0.080 for the shipped trees | the shipped variant |
+| M4 alternatives in its gate: logistic regression, a 3 s target, no minimum length | mean gains +0.049, +0.066, +0.079, against +0.080 for the trees | the trees |
+| The rules from comparing our output with the video: changes moved to the decisive touch, duels taken straight back void, keeper slots read by the half they stand in | held-out: M4 with them minus M4 without, −0.001 to +0.002 spellF1, every interval across zero | withdrawn (section 4) |
 
 ---
 
@@ -149,22 +150,13 @@ weighs; `--rules-only` writes their own team instead.
 opponent, and the ball moves with that player (at most 3 m/s relative). A **controlled touch** is
 5 or more such frames in a row (0.2 s), with the ball seen on each.
 
-**Challenges.** A controlled touch is void when the other team stayed within 3 m throughout and is
-back on the ball within 2 frames. That is a duel on tracking noise, not a possession. A tackle that
-knocks the ball loose is left alone, and the tackling team is credited.
-
 **Loose balls and a missing ball.** Possession stays with the last team to control the ball, through
 loose balls, deflections and frames with no ball, until the other team makes a controlled touch. A
 ball that disappears does not make play dead.
 
-**Where a change goes.** A change belongs on the new team's *decisive* touch (the tackle, the
-interception, the one-touch clearance), not on the moment it is visibly in control. Each change is
-walked back to the new team's first contact since the old team was last near the ball: a run near
-the ball across which its velocity changes by at least 4 m/s.
-
-**Goalkeeper slots.** The tracker hands each keeper slot to whichever keeper it sees: the away slot
-stands in Barcelona's half on 16,392 graded frames. Each keeper slot is read as the team defending
-the half it is in, and frames where the slot sweeps between goals (over 12 m/s) are dropped.
+**Challenges, where a change goes, and goalkeeper slots.** The rules put a change on the new team's
+controlled touch and read each slot with the team the metadata gives it. Where the line falls inside
+a challenge, M4 places it: it learned when a change happens from DFL's labels.
 
 **Dead balls.**
 1. **Candidate:** all tracked players' mean speed below 1.4 m/s for at least 3 s.
@@ -197,8 +189,7 @@ the half it is in, and frames where the slot sweeps between goals (over 12 m/s) 
   2. the nearest player at the kick;
   3. the tag's team.
 
-  Otherwise the previous team carries on. On this match 7 of 71 stoppages end with the restart team
-  unknown.
+  Otherwise the previous team carries on.
 
 **The team in open play (M4).** Between two stoppages:
 1. **Per frame,** the log-odds that the home team has the ball, from 63 features. Each team gets the
@@ -223,29 +214,31 @@ the half it is in, and frames where the slot sweeps between goals (over 12 m/s) 
 
 ### How we used the public window and the video
 
-The rules allow the public 5 minutes for "checking that your pipeline is correct", and say they are
-"not training data and not a tuning set" (RULES.md). Watching the video is allowed. Turning what one
-saw into "rules and constants tied to specific frames" is not. These rules were tightened on
-2026-10-23. This is everything we did with the window, including before that date:
-- **Correctness:** frame alignment, the file format, the validator and the scorer.
-- **What the labels mean.** CHALLENGE.md asks us to use the window "to understand what is
-  expected". Reading its truth against the video gave three general rules: changes go on the
-  decisive touch; a touch won straight back is not credited; the tracker swaps goalkeepers between
-  slots. None refers to a frame, and their values come from whole-match distributions read without
-  labels. On the held-out DFL matches they are worth +0.002, +0.000 and +0.002 raw.
-- **Where it steered a choice.** M1–M3b were built before the DFL dev set existed.
+The organisers' clarification of the rules takes precedence over everything before it. It allows
+automatic checks on the provided data, and inspecting the data and the video "to better understand
+what counts as possession". It does not allow checking one's output against the video, or training,
+fitting or calibrating on the ground truth or the video; parameters must be tuned on external data.
+This is everything we did with the public window and the video:
+- **Automatic checks:** frame alignment, the file format, the validator and the scorer.
+- **What counts as possession.** We read the window's truth against the video, at public-window
+  frames, to understand the labels.
+- **Our output against the video.** Early on (M3 and M3b, before the clarification), we also
+  compared our own output with the video at public-window frames. Three rules came out of it:
+  changes moved to the decisive touch, duels taken straight back made void, and keeper slots read
+  by the half they stand in. Their values came from whole-match distributions, not from any frame,
+  but the clarification does not allow how they were found, so on 2026-11-12 we withdrew all three
+  and retrained M4 without them. On the held-out DFL matches the withdrawal changes spellF1 by
+  −0.001 to +0.002, every interval across zero.
+- **Where the window steered a choice.** M1–M3b were built before the DFL dev set existed.
   - Four of M2's dead-ball settings were revised after looking at the window's stoppages, and the
     two versions were scored on it: the restart rest, the restart search, the crossing window and
     the start lag.
   - One comment and one rationale for M4's target cited it.
   - On 2026-10-28 we re-measured each of these on the DFL calibration matches, by decision rules
     written down before measuring (DESIGN.md section 4, "Re-checked on DFL"). The restart rest
-    moved from 2 s to 1 s; everything else stayed.
-- **A sanity score,** recorded after each decision and deciding nothing:
-  `baseline_smooth50` 0.326; the rules alone 0.566; M4 0.622. The window holds 17 possessions, and
-  one possession moves spellF1 by about 6 points.
-- **The video** was watched on public-window frames only. No number from it is in the pipeline or
-  the dev set.
+    moved from 2 s to 1 s; everything else stayed, each value now justified by its DFL measurement.
+- **No version is chosen on the window.** Every choice since the dev set existed was made on DFL by
+  a test written beforehand.
 
 ### The development set
 
@@ -272,51 +265,53 @@ saw into "rules and constants tied to specific frames" is not. These rules were 
 
 ### Results on the five held-out matches
 
-With synthetic tags, and the 2 s restart rest of the time. The final re-check (1 s rest) was checked
-on the calibration matches only; scoring the held-out five again would spend them.
+The shipped pipeline (M4 without the video rules, 1 s restart rest), with synthetic tags, scored
+once on 2026-11-12.
 
 | pipeline | raw | merged 2 s | merged 3 s | `D` precision / recall | possessions per min (truth 4.49 raw, 2.91 merged 3 s) |
 |---|---|---|---|---|---|
-| **M4 (submitted)** | **0.414** [0.383, 0.445] | **0.502** | **0.542** [0.513, 0.576] | 0.95 / 0.77 | 2.54 |
-| M2c: the rules alone | 0.344 [0.313, 0.377] | 0.401 | 0.430 [0.397, 0.470] | 0.95 / 0.77 | 2.35 |
-| M2b, before M2c | 0.330 | 0.383 | 0.411 | 0.96 / 0.74 | 2.40 |
+| **M4 (submitted)** | **0.416** [0.385, 0.448] | **0.504** | **0.542** [0.511, 0.576] | 0.96 / 0.77 | 2.56 |
+| M2c: the rules alone | 0.339 [0.308, 0.372] | 0.393 | 0.422 [0.387, 0.463] | 0.96 / 0.77 | 2.42 |
+| M2b, before M2c | 0.325 | 0.376 | 0.403 | 0.96 / 0.74 | 2.48 |
+| M4 before the withdrawal | 0.415 | 0.503 | 0.543 | 0.95 / 0.77 | 2.54 |
 | `baseline_smooth50` | 0.233 [0.216, 0.247] | 0.243 | 0.233 | 0.76 / 0.59 | 5.15 |
 
 Paired differences, with tags (raw / merged 3 s):
-- **M4 − M2c,** pre-registered: **+0.070** [+0.057, +0.082] / **+0.112** [+0.096, +0.129]. Without
-  tags: +0.071 / +0.115.
-- **M2c − M2b,** pre-registered (restart team by the laws, earlier starts): +0.014 [+0.010, +0.019] /
-  +0.019 [+0.014, +0.026].
-- **M2b's foul test:** +0.024 / +0.032.
-- **The decisive-touch placement, the duel rule and the keeper split:** each worth +0.000 to +0.004.
+- **M4 − the rules alone:** **+0.077** [+0.065, +0.088] / **+0.120** [+0.104, +0.137]. Without
+  tags: +0.076 / +0.121.
+- **What each dead-ball rule adds inside M4:** the foul test +0.037 / +0.046; M2c's earlier
+  stoppage starts +0.007 / +0.010; M2c's restart team by the laws of the game +0.000 / +0.001.
+- **The withdrawal** (M4 before it − M4 now): −0.001 [−0.004, +0.002] / +0.001 [−0.002, +0.004].
 
-Every pre-registered test passed. Each version beats the one before it on every one of the five
-matches, with tags and without.
+Earlier, each milestone was pre-registered and passed its test on these five: M2b's foul test,
+M2c's rules (+0.014 / +0.019 over M2b) and M4 (+0.070 / +0.112 over M2c). This is their fourth use;
+the decision to withdraw was made before it, so it could change nothing.
 
-**M4's gate.** Before the held-out test, M4 had to pass a gate on the calibration matches alone:
-leave one match out, both ways, paired against M2c, 5 seeds. It had to gain at least +0.010 under
-raw and merged 3 s, with and without tags. The shipped trees gained +0.062 / +0.095 with tags and
-+0.064 / +0.100 without. Retrained after the re-check, the gate gives +0.057 / +0.101 and +0.058 /
-+0.104.
+**M4's gate.** Before any held-out test, M4 must pass a gate on the calibration matches alone: leave
+one match out, both ways, paired against the rules alone, 5 seeds, at least +0.010 under raw and
+merged 3 s, with and without tags. Retrained without the video rules, it gains +0.069 / +0.102 with
+tags and +0.070 / +0.107 without.
 
 **Where the gain comes from.** It is the team, not more possessions. On play frames, against the
 merged truth, the team is right:
-- with the ball seen, on 89.9% (rules 86.8%);
-- with it unseen, on 86.3% (rules 72.9%).
+- with the ball seen, on 90.0% (rules 87.0%);
+- with it unseen, on 86.8% (rules 72.7%).
+
+(Leave-one-out on the calibration matches, with tags.)
 
 **Does this match look like the training data?** No labels are needed to compare the features
 (`solution/experiments/learned_drift.py`):
 - 55 of 63 features have a population stability index under 0.10.
 - Barcelona's spread and the number of tracked players drift (0.23–0.40).
-- The model does not follow that drift: Barcelona's share of play is 60.4% under the rules and
-  59.8% under M4.
+- The model did not follow that drift: before the withdrawal, Barcelona's share of play was 60.4%
+  under the rules and 59.8% under M4.
 
 ---
 
 ## 5. Limitations, and what we would fix next
 
-- **Fewer possessions on this match.** M4 finds 2.10 per minute on this match, against 2.33 for the
-  rules, while on DFL it found more (2.54 against 2.35). On both, it removes the rules' spells under
+- **Fewer possessions on this match.** Before the withdrawal, M4 found 2.10 per minute on this match,
+  against 2.33 for the rules, while on DFL it found more (2.54 against 2.35). On both, it removes the rules' spells under
   2 s, which DFL's truth says are mostly touches lost straight back. On DFL it also finds new long
   possessions, and on this match it finds none. So part of its gain may not carry over, and we have
   no label-free way to measure how much.
@@ -342,13 +337,14 @@ merged truth, the team is right:
   - The 15 s foul test sits just above the longest open-play slowdown on calibration, and the
     held-out matches showed 0.6 false stoppages per match. Barcelona's long spells of passing may
     produce more.
-  - The keeper split assumes a keeper never plays in the other half.
+  - The tracker sometimes hands a keeper slot to the other team's keeper. With the keeper split
+    withdrawn, only M4's features see this, through where the slot stands.
 - **The dev set.**
   - Seven matches from one provider.
   - DFL's possession definition differs, so absolute scores are not comparable with the leaderboard;
     we read differences.
   - The degradation matches marginals only.
-  - The held-out five have now been used for M2b, M2c and M4.
+  - The held-out five have now been used four times: M2b, M2c, M4 and the withdrawal.
 
 ---
 
@@ -369,15 +365,16 @@ shasum -a 256 evaluation/results/submission.csv
   DFL data. `--rules-only` writes the rules alone.
 - **Retraining** `model.json` needs the DFL data and scikit-learn:
   `python3 -I solution/devset/train_model.py --dfl-dir <dfl>` rebuilds it byte for byte (SHA-256
-  `6ba3f99919e01a21d18d0d692366eee1eb05420efc691dead137bef3e92c4ef7`).
-- **The exact-reproduction check** (2026-10-28, macOS 26.6.2 arm64, Python 3.14.6) gave the same file
-  in every case:
+  `08f745837633dcaa33af04560da18062dba243eff56238771776be5ee3c00bb8`).
+- **The exact-reproduction check** (2026-10-28, macOS 26.6.2 arm64, Python 3.14.6, before the
+  withdrawal) gave the same file in every case:
   - from an empty copy with no cache, cold, warm and with `--refresh`;
   - from another working directory, and under `python -I`;
   - with `PYTHONHASHSEED` 0 and 4242, and with 1 and 8 threads.
 
-  The validator accepts it: 199,319 rows; `H` 58,136, `A` 39,158, `D` 61,563, `X` 40,462 (exactly
-  the ungraded frames). `--rules-only` gives `cf791a5e4ec33f3388507b77727cf2d10bbcc2b16b27d3300ec5d83e0960f41b`.
+  The withdrawal changed no code path that could break this. The file it gives is validated on every
+  run; its SHA-256 is in the header, and `--rules-only` gives
+  `25f58f566b48171b824dc10a55023343b9cf3cfb8a8612903a874394739a8f5e`.
 - **Determinism.**
   - The pipeline has no randomness and no order dependence.
   - The model is read from JSON and evaluated in a fixed order.
@@ -385,7 +382,8 @@ shasum -a 256 evaluation/results/submission.csv
     frame across a split: nudging every `log1p` result by one float step changes 0 rows.
   - The file is written with `\n` line endings on every platform.
   - Only macOS arm64 has been run.
-- **Tests:** `pytest solution/tests solution/devset/tests` with the data: 74 pass.
+- **Tests:** `pytest solution/tests solution/devset/tests`: 73 pass without the data, and one more
+  needs it.
 
 ---
 

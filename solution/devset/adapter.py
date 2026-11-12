@@ -36,9 +36,8 @@ PIPELINES = (
     ("no restart laws", {"restart_laws": False}),
     ("no stoppage starts", {"stoppage_starts": False}),
     ("no foul stoppages", {"foul_stoppages": False}),
-    ("no boundary placement", {"boundaries": False}),
-    ("no duel rule", {"duels": False}),
-    ("no keeper split", {"split_keepers": False}),
+    ("M2c with the withdrawn video rules", {"learned_model": False, "boundaries": True,
+                                            "duels": True, "split_keepers": True}),
 )
 
 

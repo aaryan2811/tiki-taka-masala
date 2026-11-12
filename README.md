@@ -11,7 +11,7 @@ graded), from the tracking data and the Smart Tagging alone.
 - **The team in open play** comes from gradient-boosted trees trained on two open DFL matches. A
   two-state Viterbi path between the stoppages turns their per-frame output into possessions.
 - **Validated** on five other DFL matches that shaped nothing in it, degraded to look like this
-  match's tracking: spellF1 0.414, against 0.344 for the rules alone and 0.233 for the organisers'
+  match's tracking: spellF1 0.416, against 0.339 for the rules alone and 0.233 for the organisers'
   `baseline_smooth50`.
 
 **The technical document is [TECHNICAL.md](TECHNICAL.md):** the approach, the assets and training
@@ -65,12 +65,7 @@ python solution/run.py --name <team_name>
 ```
 
 It writes `evaluation/results/<team_name>.csv` (`submission.csv` without `--name`) and runs the
-official format checks on it before it exits. Among its last lines:
-
-```
-team in open play: M4's learned model (100 trees, trained on DFL J03WMX and J03WPY, CC BY 4.0), switch cost 20.0, possessions of at least 50 frames
-dead balls: 71 (1 known+oob+slow+tag, 4 oob, 4 oob+slow, 14 oob+slow+tag, 5 oob+tag, 16 slow, 24 slow+tag, 3 tag), median 22.2 s, restart team unknown for 7
-```
+official format checks on it before it exits. Its last line is `OK` and the file's path.
 
 It takes a few seconds. The first run parses the raw tracking and caches it as arrays in
 `solution/cache/` (gitignored); later runs read the cache, which is rebuilt whenever the raw file's
@@ -87,10 +82,11 @@ shasum -a 256 evaluation/results/<team_name>.csv          # Linux: sha256sum
 The validator must print `Valid.` The SHA-256 must be
 
 ```
-c77d0ae0bcf5556bf0aca67b82e930b938230652da6f0fe6c6e3504fd5cbffb1
+8e93ae6ffd0967dcd06fa622c0ca4bac38fe42d25f401eb71e053cbbbae03b41
 ```
 
-We got that hash in every way we tried (TECHNICAL.md, "Reproduction"):
+Before the 2026-11-12 withdrawal of the video rules, we got the file's hash in every way we tried
+(TECHNICAL.md, "Reproduction"):
 - from a fresh clone: cold run, warm run and `--refresh`;
 - from another working directory, and under `python -I`;
 - with different `PYTHONHASHSEED`s and thread counts;
@@ -120,13 +116,12 @@ python solution/evaluate.py evaluation/results/<team_name>.csv --bootstrap 1000 
 python evaluation/run_evaluation.py                                               # the official board, with the baselines
 ```
 
-Expected on the public window, as a correctness check: spellF1 0.6222 [0.3852, 0.8058], macroF1
-0.9023.
+The public window is an automatic check that the pipeline is correct, nothing more: no version is
+chosen on it.
 
 **The rules alone.** `python solution/run.py --rules-only --name rules_only` writes the pipeline
 without the learned model: its team in open play is the rules'. Its SHA-256 is
-`cf791a5e4ec33f3388507b77727cf2d10bbcc2b16b27d3300ec5d83e0960f41b`, and it scores 0.5655
-[0.3717, 0.7448] / 0.8962 on the public window.
+`25f58f566b48171b824dc10a55023343b9cf3cfb8a8612903a874394739a8f5e`.
 
 ## Without the match data
 
@@ -154,7 +149,7 @@ python3 -I solution/devset/train_model.py --dfl-dir /path/to/dfl     # about a m
 - **What it needs:** the DFL files and scikit-learn 1.9.0 with threadpoolctl 3.5.0 (both in
   `requirements.txt`). `run.py` needs neither.
 - **It is deterministic:** one thread, no early stopping, so a rerun writes the same file, SHA-256
-  `6ba3f99919e01a21d18d0d692366eee1eb05420efc691dead137bef3e92c4ef7`.
+  `08f745837633dcaa33af04560da18062dba243eff56238771776be5ee3c00bb8`.
 - **To compare without overwriting it,** pass `--out /tmp/model.json` and compare the two files.
 
 Run it with `python3 -I`: the DFL files come from outside this repository.
@@ -203,17 +198,20 @@ at the version this entry follows.
 
 The organisers'
 [RULES.md](https://github.com/metrica-sports/more-than-a-hack-2027/blob/f8f2629ff1e0985f81d7e59d8413678514ee1530/RULES.md)
-(as of their commit `f8f2629`, 2026-10-23) is the authority; these are how we apply it.
+(as of their commit `f8f2629`, 2026-10-23) and their later clarification of the rules, which takes
+precedence, are the authority; these are how we apply them.
 - No hand labels on this match, in any amount or for any purpose, and no human-produced data about
   it from any source. Nothing derived from the private ground truth.
 - The model is trained on DFL matches only. This match enters only as unlabelled tracking and Smart
   Tagging: the features `run.py` computes, and the aggregates the dev set's degradation is fitted to.
-- The public window is a correctness check, "not training data and not a tuning set". Never choose
-  between two versions on it, and never validate a model on it. Some early values were chosen after
+- The public window is for automatic checks only. Nothing is trained, fitted or calibrated on it,
+  every parameter is tuned on external data, and no version is chosen on it. Some early values were chosen after
   looking at public-window cases; DESIGN.md section 4 ("Re-checked on DFL") says which, and what now
   justifies each.
-- Watching the video is for understanding the data. No label, correction, rule or constant refers to
-  a frame of this match, except the dead span FAQ.md publishes before the second-half kick-off.
+- The video is for understanding what counts as possession, never for checking our output. The
+  three rules that came from checking output against it are withdrawn (TECHNICAL.md, section 4). No
+  label, correction, rule or constant refers to a frame of this match, except the dead span FAQ.md
+  publishes before the second-half kick-off.
 - No data, cache or submission file in git. `solution/.gitignore`, `solution/devset/.gitignore` and
   the root `.gitignore` cover them.
 
