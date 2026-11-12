@@ -1,0 +1,4 @@
+# Parsed DFL matches, cached by devset/dfl.py. Frame-level tracking: never commit it.
+cache/
+# Result tables written by run_devset.py.
+results/

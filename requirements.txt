@@ -1,0 +1,12 @@
+# Pinned, because the submitted file has to regenerate exactly from this repository.
+# Tested under Python 3.14.
+numpy==2.4.6
+pandas==3.0.3
+
+# Training M4's model (solution/devset/train_model.py) and the experiments only; run.py reads the
+# exported model.json with numpy alone.
+scikit-learn==1.9.0
+threadpoolctl==3.5.0
+
+# Tests only.
+pytest==9.0.3

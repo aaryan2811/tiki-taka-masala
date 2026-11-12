@@ -1,0 +1,39 @@
+# This repository is public. The match data, anything derived from it frame by frame, and the
+# full-match ground truth are not, and must never be committed. solution/.gitignore and
+# solution/devset/.gitignore cover the caches.
+
+# -- private ground truth ----------------------------------------------------------------------
+# The public 5-minute ground truth (evaluation/gt/*_possession_gt_public.csv) is committed on
+# purpose; the full-match files are not.
+*_possession_gt.csv
+*_possession_gt_meta.json
+*_possession_gt_reference.csv
+possession_by_frame.pkl
+
+# -- submissions -------------------------------------------------------------------------------
+# A submission labels the whole match, so none is committed. The organisers' baselines are the one
+# exception: they are computed from the tracking alone and ship so a fresh clone can score something.
+evaluation/results/*.csv
+!evaluation/results/baseline_*.csv
+evaluation/reports/
+evaluation/scoreboard.csv
+
+# -- gated data --------------------------------------------------------------------------------
+# data/ holds only its README in git; the bundle unpacked into it stays out.
+data/*
+!data/README.md
+
+*.mp4
+*.gzip
+*.pl3container
+
+# -- editors and build artifacts ---------------------------------------------------------------
+.idea/
+.vscode/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+.DS_Store

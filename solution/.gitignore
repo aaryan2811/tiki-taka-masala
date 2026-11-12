@@ -1,0 +1,3 @@
+# Parsed tracking, cached by possession/atd.py. It is frame-level tracking derived from the gated
+# data, which the terms forbid redistributing -- it must never be committed.
+cache/
