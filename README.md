@@ -184,6 +184,7 @@ solution/                 our pipeline
   experiments/            one-off studies whose results feed DESIGN.md
   tests/                  synthetic-data tests
   DESIGN.md               the engineering record
+  LICENSE                 MIT, for our code and documents
   cache/                  parsed tracking -- gitignored, never commit it
 
 from the organisers' starter kit (MIT, see LICENSE):
@@ -225,3 +226,9 @@ dataset of spatiotemporal and event data in elite soccer* [Dataset]. figshare.
 
 `games.py`, `evaluation/`, `starter/` and `data/README.md` are from the organisers' starter kit,
 © Metrica Sports, under the MIT licence in [LICENSE](LICENSE).
+
+## Licence
+
+Our code and documents (`solution/`, this README and TECHNICAL.md) are under the MIT licence in
+[solution/LICENSE](solution/LICENSE), © 2026 Tiki Taka Masala. The organisers' files keep their own
+MIT licence, [LICENSE](LICENSE).
