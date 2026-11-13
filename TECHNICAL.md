@@ -122,8 +122,8 @@ truth or the video. The held-out five trained and tuned nothing.
 
 ### Tried and dropped
 
-Measured on the DFL calibration matches unless stated. There, the rules alone (M2c) score 0.346 raw
-and 0.468 merged at 3 s.
+Measured on the DFL calibration matches unless stated. There, the rules alone (M2c) now score 0.342
+raw and 0.456 merged at 3 s; the rows were measured while the withdrawn video rules were still on.
 
 | idea | what we measured | outcome |
 |---|---|---|
